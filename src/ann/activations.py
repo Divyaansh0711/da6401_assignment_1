@@ -52,15 +52,3 @@ class ReLU:
         dZ[Z <= 0] = 0
         return dZ
     
-if __name__ == "__main__":
-    np.random.seed(0)
-
-    Z = np.random.randn(5, 3)
-    dA = np.random.randn(5, 3)
-
-    relu = ReLU()
-    A = relu.forward(Z)
-    dZ = relu.backward(dA)
-
-    print("Forward shape:", A.shape)
-    print("Backward shape:", dZ.shape)

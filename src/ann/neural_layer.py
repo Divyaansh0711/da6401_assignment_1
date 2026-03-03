@@ -54,18 +54,3 @@ class LinearLayer:
     
     
     
-if __name__ == "__main__":
-    np.random.seed(0)
-
-    layer = LinearLayer(4, 3)
-    X = np.random.randn(5, 4)
-
-    Z = layer.forward(X)
-    print("Forward shape:", Z.shape)
-
-    dZ = np.random.randn(5, 3)
-    dX = layer.backward(dZ)
-
-    print("dX shape:", dX.shape)
-    print("grad_W shape:", layer.grad_W.shape)
-    print("grad_b shape:", layer.grad_b.shape)
