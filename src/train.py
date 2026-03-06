@@ -179,10 +179,12 @@
 
 # wandb.finish()
 
+import copy
 import argparse
 import numpy as np
 import wandb
 import json
+import os
 
 from keras.datasets import mnist, fashion_mnist
 from sklearn.model_selection import train_test_split
@@ -310,7 +312,7 @@ def train(model, optimizer, loss_fn, X_train, y_train, X_val, y_val, args):
             best_f1 = val_f1
             # Assuming get_weights() returns a copy or a serializable dict. 
             # If it passes by reference, you might need to use copy.deepcopy()
-            best_weights = model.get_weights()
+            best_weights = copy.deepcopy(model.get_weights())
 
     # FIXED: Return the best metrics so the main script can use them
     return model, best_weights, best_f1
@@ -344,37 +346,91 @@ if __name__ == "__main__":
         args
     )
         
-    # ---- Save best model and config ----
-    if best_weights is not None:
-        # Save weights
-        np.save(args.model_path, best_weights)
-        print(f"Best model saved to {args.model_path} with F1-score: {best_f1:.4f}")
+    # # ---- Save best model and config ----
+    # if best_weights is not None:
+    #     # Save weights
+    #     np.save(args.model_path, best_weights)
+    #     print(f"Best model saved to {args.model_path} with F1-score: {best_f1:.4f}")
         
-        # Save config
-        best_config = {
-            "dataset": args.dataset,
-            "epochs": args.epochs,
-            "batch_size": args.batch_size,
-            "loss": args.loss,
-            "optimizer": args.optimizer,
-            "learning_rate": args.learning_rate,
-            "weight_decay": args.weight_decay,
-            "num_layers": args.num_layers,
-            "hidden_size": args.hidden_size,
-            "activation": args.activation,
-            "weight_init": args.weight_init,
-            "best_val_f1": best_f1
-        }
+    #     # Save config
+    #     best_config = {
+    #         "dataset": args.dataset,
+    #         "epochs": args.epochs,
+    #         "batch_size": args.batch_size,
+    #         "loss": args.loss,
+    #         "optimizer": args.optimizer,
+    #         "learning_rate": args.learning_rate,
+    #         "weight_decay": args.weight_decay,
+    #         "num_layers": args.num_layers,
+    #         "hidden_size": args.hidden_size,
+    #         "activation": args.activation,
+    #         "weight_init": args.weight_init,
+    #         "best_val_f1": best_f1
+    #     }
         
-        # Dynamically create the config path based on the model path
-        # e.g., "src/best_model.npy" -> "src/best_model_config.json"
-        config_path = args.model_path.replace(".npy", "_config.json")
+    #     # Dynamically create the config path based on the model path
+    #     # e.g., "src/best_model.npy" -> "src/best_model_config.json"
+    #     config_path = args.model_path.replace(".npy", "_config.json")
         
-        with open(config_path, "w") as f:
-            json.dump(best_config, f, indent=4)
-        print(f"Best configuration saved to {config_path}")
+    #     with open(config_path, "w") as f:
+    #         json.dump(best_config, f, indent=4)
+    #     print(f"Best configuration saved to {config_path}")
             
+    # else:
+    #     print("Warning: No best model found. Nothing was saved.")
+
+    # wandb.finish()
+    
+    
+    # ---- Check against Global Scoreboard ----
+    global_scoreboard_path = "src/global_best.json"
+    global_best_f1 = 0.0
+
+    # 1. Read the all-time high score (if the file exists)
+    if os.path.exists(global_scoreboard_path):
+        with open(global_scoreboard_path, "r") as f:
+            try:
+                global_data = json.load(f)
+                global_best_f1 = global_data.get("global_best_f1", 0.0)
+            except json.JSONDecodeError:
+                pass # If file is empty or corrupted, default to 0.0
+
+    # 2. Compare local best to global best
+    if best_weights is not None:
+        if best_f1 > global_best_f1:
+            print(f"\n🎉 NEW GLOBAL CHAMPION! Local F1 ({best_f1:.4f}) beat the Global F1 ({global_best_f1:.4f})")
+            
+            # Save the new winning weights
+            np.save(args.model_path, best_weights)
+            
+            # Save the new winning configuration
+            best_config = {
+                "dataset": args.dataset,
+                "epochs": args.epochs,
+                "batch_size": args.batch_size,
+                "loss": args.loss,
+                "optimizer": args.optimizer,
+                "learning_rate": args.learning_rate,
+                "weight_decay": args.weight_decay,
+                "num_layers": args.num_layers,
+                "hidden_size": args.hidden_size,
+                "activation": args.activation,
+                "weight_init": args.weight_init,
+                "best_val_f1": best_f1
+            }
+            config_path = args.model_path.replace(".npy", "_config.json")
+            with open(config_path, "w") as f:
+                json.dump(best_config, f, indent=4)
+            
+            # Update the global scoreboard for the next player
+            with open(global_scoreboard_path, "w") as f:
+                json.dump({"global_best_f1": best_f1}, f, indent=4)
+                
+            print(f"Files successfully updated at {args.model_path} and {config_path}")
+            
+        else:
+            print(f"\n❌ Local best ({best_f1:.4f}) did not beat the Global best ({global_best_f1:.4f}). Discarding model.")
     else:
-        print("Warning: No best model found. Nothing was saved.")
+        print("\nWarning: No best model found in this run.")
 
     wandb.finish()
