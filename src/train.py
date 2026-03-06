@@ -182,6 +182,7 @@
 import argparse
 import numpy as np
 import wandb
+import json
 
 from keras.datasets import mnist, fashion_mnist
 from sklearn.model_selection import train_test_split
@@ -343,11 +344,37 @@ if __name__ == "__main__":
         args
     )
         
-    # ---- Save best model ----
+    # ---- Save best model and config ----
     if best_weights is not None:
-        np.save(args.model_path, best_weights) # FIXED: Use args.model_path instead of hardcoding
+        # Save weights
+        np.save(args.model_path, best_weights)
         print(f"Best model saved to {args.model_path} with F1-score: {best_f1:.4f}")
+        
+        # Save config
+        best_config = {
+            "dataset": args.dataset,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "loss": args.loss,
+            "optimizer": args.optimizer,
+            "learning_rate": args.learning_rate,
+            "weight_decay": args.weight_decay,
+            "num_layers": args.num_layers,
+            "hidden_size": args.hidden_size,
+            "activation": args.activation,
+            "weight_init": args.weight_init,
+            "best_val_f1": best_f1
+        }
+        
+        # Dynamically create the config path based on the model path
+        # e.g., "src/best_model.npy" -> "src/best_model_config.json"
+        config_path = args.model_path.replace(".npy", "_config.json")
+        
+        with open(config_path, "w") as f:
+            json.dump(best_config, f, indent=4)
+        print(f"Best configuration saved to {config_path}")
+            
     else:
-        print("Warning: No best model found")
+        print("Warning: No best model found. Nothing was saved.")
 
     wandb.finish()
