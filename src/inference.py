@@ -30,10 +30,67 @@ def get_args():
                         choices=["random", "xavier"])
 
     parser.add_argument("-w_p", "--wandb_project", type=str, required=True)
+    parser.add_argument("--model_path", type=str, default="src/best_model.npy")
 
     return parser.parse_args()
 
+# can use below for sanity check
+# if __name__ == "__main__":
+#     args = get_args()
+#     print(args)
+
+import argparse
+import numpy as np
+from keras.datasets import mnist, fashion_mnist
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+from src.ann.neural_network import NeuralNetwork
+
+
+def load_model(model_path):
+    data = np.load(model_path, allow_pickle=True).item()
+    return data
+
+
+def load_data(dataset):
+    if dataset == "mnist":
+        (_, _), (X_test, y_test) = mnist.load_data()
+    else:
+        (_, _), (X_test, y_test) = fashion_mnist.load_data()
+
+    X_test = X_test.reshape(-1, 784) / 255.0
+    return X_test, y_test
+
+
+def main(args):
+
+    # Load dataset
+    X_test, y_test = load_data(args.dataset)
+
+    # Build model
+    model = NeuralNetwork(args)
+
+    # Load weights
+    weights = load_model(args.model_path)
+    model.set_weights(weights)
+
+    # Forward pass
+    logits = model.forward(X_test)
+    preds = np.argmax(logits, axis=1)
+
+    # Metrics
+    acc = accuracy_score(y_test, preds)
+    precision = precision_score(y_test, preds, average="macro")
+    recall = recall_score(y_test, preds, average="macro")
+    f1 = f1_score(y_test, preds, average="macro")
+
+    print("Accuracy:", acc)
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1-score:", f1)
+
 
 if __name__ == "__main__":
+
     args = get_args()
-    print(args)
+    main(args)
