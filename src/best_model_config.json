@@ -1,8 +1,8 @@
 {
     "dataset": "mnist",
-    "epochs": 3,
+    "epochs": 10,
     "batch_size": 64,
-    "loss": "cross_entropy",
+    "loss": "mean_squared_error",
     "optimizer": "rmsprop",
     "learning_rate": 0.001,
     "weight_decay": 0.0,
@@ -13,5 +13,5 @@
     ],
     "activation": "relu",
     "weight_init": "xavier",
-    "best_val_f1": 0.9736500340531713
+    "best_val_f1": 0.9807586882923325
 }
