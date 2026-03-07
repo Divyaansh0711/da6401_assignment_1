@@ -15,7 +15,7 @@ from ann.neural_network import NeuralNetwork
 from ann.objective_functions import CrossEntropyLoss, MeanSquaredError
 from ann.optimizers import SGD, Momentum, NAG, RMSProp, Adam
 
-def get_args():
+def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str, required=True, choices=["mnist", "fashion_mnist"])
     parser.add_argument("-e", "--epochs", type=int, required=True)
@@ -213,7 +213,7 @@ def train(model, optimizer, loss_fn, X_train, y_train, X_val, y_val, args):
     return model, best_weights, best_f1
 
 if __name__ == "__main__":
-    args = get_args()
+    args = parse_arguments()
 
     wandb.init(project=args.wandb_project, config=vars(args))
 
